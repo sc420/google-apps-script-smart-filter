@@ -1,202 +1,202 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <base target="_top">
 
-    <?!= include('settings_sidebar_styles'); ?>
-  </head>
+<head>
+  <base target="_top">
 
-  <body>
-    <div class="container-fluid overflow-hidden p-1">
-      <!-- Spinner -->
-      <div id="spinnerSection" class="row mt-3">
-        <div class="d-flex justify-content-center m-1">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-        </div>
-        <p class="text-center mt-1">讀取中...</p>
-      </div>
+  <?!= include('settings_sidebar_styles'); ?>
+</head>
 
-      <!-- Include Filter -->
-      <div id="includeFilterSection" class="card mt-1 d-none">
-        <div class="card-header">
-          <i class="bi bi-plus-square text-success"></i>
-          篩選器 (包含)
-        </div>
-        <div class="card-body p-1">
-          <div class="row mt-1">
-            <div class="col">
-              <button type="button" class="btn btn-primary addRow">
-                <i class="bi bi-plus-lg"></i>
-                新增
-              </button>
-              <button type="button" class="btn btn-secondary d-none editCell">
-                <i class="bi bi-check-lg"></i>
-                編輯
-              </button>
-              <button type="button" class="btn btn-danger d-none removeRow">
-                <i class="bi bi-trash-fill"></i>
-                刪除
-              </button>
-              <button type="button" class="btn btn-success d-none finishEdit">
-                <i class="bi bi-check-lg"></i>
-                完成編輯
-              </button>
-            </div>
-          </div>
-          <hr class="border-top border-secondary mt-1 mb-0">
-          <table class="table table-hover rulesTable">
-            <thead>
-              <tr>
-                <th>欄位</th>
-                <th>運算子</th>
-                <th>數值</th>
-              </tr>
-            </thead>
-          </table>
-          <hr class="border-1 border-top border-dark my-1">
-          <div class="d-flex flex-row">
-            <div class="p-2 align-self-center">
-              <label>背景顏色:</label>
-            </div>
-            <div class="p-2 flex-grow-1">
-              <input type="color"
-                  class="form-control form-control-color backgroundColorPicker"
-                  value="#000000" title="請選擇顏色">
-            </div>
-          </div>
+<body>
+  <div class="container-fluid overflow-hidden p-1">
+    <!-- Spinner -->
+    <div id="spinnerSection" class="row mt-3">
+      <div class="d-flex justify-content-center m-1">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
         </div>
       </div>
-
-      <!-- Exclude Filter -->
-      <div id="excludeFilterSection" class="card mt-1 d-none">
-        <div class="card-header">
-          <i class="bi bi-dash-square text-danger"></i>
-          篩選器 (排除)
-        </div>
-        <div class="card-body p-1">
-          <div class="row mt-1">
-            <div class="col">
-              <button type="button" class="btn btn-primary addRow">
-                <i class="bi bi-plus-lg"></i>
-                新增
-              </button>
-              <button type="button" class="btn btn-secondary d-none editCell">
-                <i class="bi bi-check-lg"></i>
-                編輯
-              </button>
-              <button type="button" class="btn btn-danger d-none removeRow">
-                <i class="bi bi-trash-fill"></i>
-                刪除
-              </button>
-              <button type="button" class="btn btn-success d-none finishEdit">
-                <i class="bi bi-check-lg"></i>
-                完成編輯
-              </button>
-            </div>
-          </div>
-          <hr class="border-top border-secondary mt-1 mb-0">
-          <table class="table table-hover rulesTable">
-            <thead>
-              <tr>
-                <th>欄位</th>
-                <th>運算子</th>
-                <th>數值</th>
-              </tr>
-            </thead>
-          </table>
-          <hr class="border-1 border-top border-dark my-1">
-          <div class="d-flex flex-row">
-            <div class="p-2 align-self-center">
-              <label>背景顏色:</label>
-            </div>
-            <div class="p-2 flex-grow-1">
-              <input type="color"
-                  class="form-control form-control-color backgroundColorPicker"
-                  value="#000000" title="請選擇顏色">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Submit Section -->
-      <div id="submitSection" class="mt-3 d-flex d-none">
-        <button type="button" class="btn btn-primary flex-fill updateChanges">
-          <span class="idleIcon">
-            <i class="bi bi-arrow-repeat"></i>
-          </span>
-          <span class="busyIcon d-none">
-            <div class="spinner-border spinner-border-sm" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-          </span>
-          更新
-        </button>
-        <div class="dropdown ms-1">
-          <button class="btn btn-secondary dropdown-toggle"
-              id="advancedDropdownMenuButton" type="button"
-              data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-three-dots-vertical"></i>
-          </button>
-          <ul class="dropdown-menu"
-              aria-labelledby="advancedDropdownMenuButton">
-            <li><a class="dropdown-item resetSettings" href="#">重設</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Message Section -->
-      <div id="messageSection" class="row mt-3 d-none">
-        <div class="col">
-          <div class="alert alert-success success d-none" role="alert">
-            <span class="message"></span>
-          </div>
-          <div class="alert alert-danger error d-none" role="alert">
-            <span class="message"></span>
-          </div>
-          <div class="alert alert-info info d-none" role="alert">
-            <span class="message"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Table Content (Invisible) -->
-      <table id="tableTemplate" class="d-none">
-        <tbody>
-          <tr>
-            <td class="selectable" data-col="0" data-col-name="key">
-              <span class="text">抽籤日期</span>
-              <select class="form-select d-none editor"></select>
-            </td>
-            <td class="selectable" data-col="1" data-col-name="op">
-              <span class="text">&gt;=</span>
-              <select class="form-select d-none editor"></select>
-            </td>
-            <td class="selectable" data-col="2" data-col-name="value">
-              <span class="text">5000</span>
-              <input type="text" class="form-control d-none editor">
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
+      <p class="text-center mt-1">讀取中...</p>
     </div>
 
-    <!-- JQuery -->
-    <!-- Reference: https://developers.google.com/speed/libraries#jquery -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- Include Filter -->
+    <div id="includeFilterSection" class="card mt-1 d-none">
+      <div class="card-header">
+        <i class="bi bi-plus-square text-success"></i>
+        篩選器 (包含)
+      </div>
+      <div class="card-body p-1">
+        <div class="row mt-1">
+          <div class="col">
+            <button type="button" class="btn btn-primary addRow">
+              <i class="bi bi-plus-lg"></i>
+              新增
+            </button>
+            <button type="button" class="btn btn-secondary d-none editCell">
+              <i class="bi bi-check-lg"></i>
+              編輯
+            </button>
+            <button type="button" class="btn btn-danger d-none removeRow">
+              <i class="bi bi-trash-fill"></i>
+              刪除
+            </button>
+            <button type="button" class="btn btn-success d-none finishEdit">
+              <i class="bi bi-check-lg"></i>
+              完成編輯
+            </button>
+          </div>
+        </div>
+        <hr class="border-top border-secondary mt-1 mb-0">
+        <table class="table table-hover rulesTable">
+          <thead>
+            <tr>
+              <th>欄位</th>
+              <th>運算子</th>
+              <th>數值</th>
+            </tr>
+          </thead>
+        </table>
+        <hr class="border-1 border-top border-dark my-1">
+        <div class="d-flex flex-row">
+          <div class="p-2 align-self-center">
+            <label>背景顏色:</label>
+          </div>
+          <div class="p-2 flex-grow-1">
+            <input type="color" class="form-control form-control-color backgroundColorPicker" value="#000000"
+              title="請選擇顏色">
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- Bootstrap -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <!-- Exclude Filter -->
+    <div id="excludeFilterSection" class="card mt-1 d-none">
+      <div class="card-header">
+        <i class="bi bi-dash-square text-danger"></i>
+        篩選器 (排除)
+      </div>
+      <div class="card-body p-1">
+        <div class="row mt-1">
+          <div class="col">
+            <button type="button" class="btn btn-primary addRow">
+              <i class="bi bi-plus-lg"></i>
+              新增
+            </button>
+            <button type="button" class="btn btn-secondary d-none editCell">
+              <i class="bi bi-check-lg"></i>
+              編輯
+            </button>
+            <button type="button" class="btn btn-danger d-none removeRow">
+              <i class="bi bi-trash-fill"></i>
+              刪除
+            </button>
+            <button type="button" class="btn btn-success d-none finishEdit">
+              <i class="bi bi-check-lg"></i>
+              完成編輯
+            </button>
+          </div>
+        </div>
+        <hr class="border-top border-secondary mt-1 mb-0">
+        <table class="table table-hover rulesTable">
+          <thead>
+            <tr>
+              <th>欄位</th>
+              <th>運算子</th>
+              <th>數值</th>
+            </tr>
+          </thead>
+        </table>
+        <hr class="border-1 border-top border-dark my-1">
+        <div class="d-flex flex-row">
+          <div class="p-2 align-self-center">
+            <label>背景顏色:</label>
+          </div>
+          <div class="p-2 flex-grow-1">
+            <input type="color" class="form-control form-control-color backgroundColorPicker" value="#000000"
+              title="請選擇顏色">
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- DataTables -->
-    <script src="https://cdn.datatables.net/1.11.0/js/jquery.dataTables.min.js"></script>
-    <!-- DataTables (Styling: Bootstrap 5) -->
-    <script src="https://cdn.datatables.net/1.11.0/js/dataTables.bootstrap5.min.js"></script>
-    <!-- DataTables (Extension: Select) -->
-    <script src="https://cdn.datatables.net/select/1.3.3/js/dataTables.select.min.js"></script>
+    <!-- Submit Section -->
+    <div id="submitSection" class="mt-3 d-flex d-none">
+      <button type="button" class="btn btn-primary flex-fill updateChanges">
+        <span class="idleIcon">
+          <i class="bi bi-arrow-repeat"></i>
+        </span>
+        <span class="busyIcon d-none">
+          <div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </span>
+        更新
+      </button>
+      <div class="dropdown ms-1">
+        <button class="btn btn-secondary dropdown-toggle" id="advancedDropdownMenuButton" type="button"
+          data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-three-dots-vertical"></i>
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="advancedDropdownMenuButton">
+          <li><a class="dropdown-item resetSettings" href="#">重設</a></li>
+        </ul>
+      </div>
+    </div>
 
-    <?!= include('settings_sidebar_scripts'); ?>
-  </body>
+    <!-- Message Section -->
+    <div id="messageSection" class="row mt-3 d-none">
+      <div class="col">
+        <div class="alert alert-success success d-none" role="alert">
+          <span class="message"></span>
+        </div>
+        <div class="alert alert-danger error d-none" role="alert">
+          <span class="message"></span>
+        </div>
+        <div class="alert alert-info info d-none" role="alert">
+          <span class="message"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Content (Invisible) -->
+    <table id="tableTemplate" class="d-none">
+      <tbody>
+        <tr>
+          <td class="selectable" data-col="0" data-col-name="key">
+            <span class="text">抽籤日期</span>
+            <select class="form-select d-none editor"></select>
+          </td>
+          <td class="selectable" data-col="1" data-col-name="op">
+            <span class="text">&gt;=</span>
+            <select class="form-select d-none editor"></select>
+          </td>
+          <td class="selectable" data-col="2" data-col-name="value">
+            <span class="text">5000</span>
+            <input type="text" class="form-control d-none editor">
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <!-- JQuery -->
+  <!-- Reference: https://developers.google.com/speed/libraries#jquery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+  <!-- Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+    crossorigin="anonymous"></script>
+
+  <!-- DataTables -->
+  <script src="https://cdn.datatables.net/1.11.0/js/jquery.dataTables.min.js"></script>
+  <!-- DataTables (Styling: Bootstrap 5) -->
+  <script src="https://cdn.datatables.net/1.11.0/js/dataTables.bootstrap5.min.js"></script>
+  <!-- DataTables (Extension: Select) -->
+  <script src="https://cdn.datatables.net/select/1.3.3/js/dataTables.select.min.js"></script>
+
+  <?!= include('settings_sidebar_scripts'); ?>
+</body>
+
 </html>
