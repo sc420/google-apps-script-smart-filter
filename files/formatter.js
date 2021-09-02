@@ -4,7 +4,21 @@
 
 class Formatter {
   constructor() {
-    this.opList = ['>=', '=', '<='];
+    this.opList = [
+      '=',
+      '!=',
+      '>',
+      '>=',
+      '<',
+      '<=',
+      '介於 [x,y]',
+      '不介於 [x,y]',
+      '文字包含',
+      '文字不包含',
+      '文字開頭',
+      '文字結尾',
+      'regex',
+    ];
     this.defaultBackgroundColor = 'white';
     this.spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     if (!this.spreadsheet) throw new Error('Should have an active spreadsheet');
@@ -103,9 +117,7 @@ class Formatter {
         const col = headerNames.indexOf(rule.key);
         if (col < 0) throw new Error(`找不到欄位 "${rule.key}"`);
         const sheetValue = sheetRow[col];
-        if (
-          !Formatter.matchRule(dataRange, row, col, sheetValue, ruleIndex, rule)
-        ) {
+        if (!Formatter.matchRule(sheetValue, ruleIndex, rule)) {
           break;
         }
         numMatches += 1;
@@ -131,9 +143,7 @@ class Formatter {
         const col = headerNames.indexOf(rule.key);
         if (col < 0) throw new Error(`找不到欄位 "${rule.key}"`);
         const sheetValue = sheetRow[col];
-        if (
-          Formatter.matchRule(dataRange, row, col, sheetValue, ruleIndex, rule)
-        ) {
+        if (Formatter.matchRule(sheetValue, ruleIndex, rule)) {
           isAnyMatch = true;
           break;
         }
@@ -144,52 +154,125 @@ class Formatter {
     return output;
   }
 
-  static matchRule(dataRange, row, col, sheetValue, ruleIndex, rule) {
-    const info = {
-      dataRange,
-      row,
-      col,
-      ruleIndex,
-    };
+  static matchRule(sheetValue, ruleIndex, rule) {
+    const sheetStr = `${sheetValue}`;
+    // Reference: https://support.google.com/docs/table/25273
     switch (rule.op) {
-      case '>=': {
-        const sheetNum = Formatter.parseSheetValueToNum(sheetValue, info);
-        const ruleNum = Formatter.parseRuleValueToNum(rule, info);
-        return sheetNum >= ruleNum;
-      }
       case '=': {
-        const sheetNum = Formatter.parseSheetValueToNum(sheetValue, info);
-        const ruleNum = Formatter.parseRuleValueToNum(rule, info);
+        const sheetNum = Formatter.parseStrToNum(sheetStr);
+        const ruleNum = Formatter.parseStrToNum(rule.value);
+        if (Number.isNaN(sheetNum) || Number.isNaN(ruleNum)) {
+          return sheetStr === rule.value;
+        }
         return Math.abs(sheetNum - ruleNum) < Number.EPSILON;
       }
+      case '!=': {
+        const sheetNum = Formatter.parseStrToNum(sheetStr);
+        const ruleNum = Formatter.parseStrToNum(rule.value);
+        if (Number.isNaN(sheetNum) || Number.isNaN(ruleNum)) {
+          return sheetStr !== rule.value;
+        }
+        return Math.abs(sheetNum - ruleNum) >= Number.EPSILON;
+      }
+      case '>': {
+        const sheetNum = Formatter.parseStrToNum(sheetStr);
+        const ruleNum = Formatter.parseStrToNum(rule.value);
+        if (Number.isNaN(sheetNum) || Number.isNaN(ruleNum)) {
+          return sheetStr > rule.value;
+        }
+        return sheetNum > ruleNum;
+      }
+      case '>=': {
+        const sheetNum = Formatter.parseStrToNum(sheetStr);
+        const ruleNum = Formatter.parseStrToNum(rule.value);
+        if (Number.isNaN(sheetNum) || Number.isNaN(ruleNum)) {
+          return sheetStr >= rule.value;
+        }
+        return sheetNum >= ruleNum;
+      }
+      case '<': {
+        const sheetNum = Formatter.parseStrToNum(sheetStr);
+        const ruleNum = Formatter.parseStrToNum(rule.value);
+        if (Number.isNaN(sheetNum) || Number.isNaN(ruleNum)) {
+          return sheetStr < rule.value;
+        }
+        return sheetNum < ruleNum;
+      }
       case '<=': {
-        const sheetNum = Formatter.parseSheetValueToNum(sheetValue, info);
-        const ruleNum = Formatter.parseRuleValueToNum(rule, info);
+        const sheetNum = Formatter.parseStrToNum(sheetStr);
+        const ruleNum = Formatter.parseStrToNum(rule.value);
+        if (Number.isNaN(sheetNum) || Number.isNaN(ruleNum)) {
+          return sheetStr <= rule.value;
+        }
         return sheetNum <= ruleNum;
+      }
+      case '介於 [x,y]': {
+        const sheetNum = Formatter.parseStrToNum(sheetStr);
+        if (Number.isNaN(sheetNum)) return false;
+        const [start, end] = Formatter.tryParseRangeText(ruleIndex, rule);
+        if (
+          Number.isNaN(sheetNum)
+          || Number.isNaN(start)
+          || Number.isNaN(end)
+        ) {
+          return false;
+        }
+        return sheetNum >= start && sheetNum <= end;
+      }
+      case '不介於 [x,y]': {
+        const sheetNum = Formatter.parseStrToNum(sheetStr);
+        const [start, end] = Formatter.tryParseRangeText(ruleIndex, rule);
+        if (
+          Number.isNaN(sheetNum)
+          || Number.isNaN(start)
+          || Number.isNaN(end)
+        ) {
+          return false;
+        }
+        return !(sheetNum >= start && sheetNum <= end);
+      }
+      case '文字包含': {
+        return sheetStr.indexOf(rule.value) >= 0;
+      }
+      case '文字不包含': {
+        return sheetStr.indexOf(rule.value) < 0;
+      }
+      case '文字開頭': {
+        return sheetStr.startsWith(rule.value);
+      }
+      case '文字結尾': {
+        return sheetStr.endsWith(rule.value);
+      }
+      case 'regex': {
+        const regex = new RegExp(rule.value);
+        return regex.test(sheetStr);
       }
       default:
         throw new Error(`Unknown operation ${rule.op}`);
     }
   }
 
-  static parseSheetValueToNum(sheetValue, info) {
-    const sheetValueAsFloat = Number.parseFloat(sheetValue);
-    if (Number.isNaN(sheetValueAsFloat)) {
-      const cellRange = info.dataRange.offset(info.row, info.col, 1, 1);
-      const a1Notation = cellRange.getA1Notation();
-      throw new Error(`無法將 "${a1Notation}" 轉成數字: "${sheetValue}"`);
+  static tryParseRangeText(ruleIndex, rule) {
+    const str = rule.value;
+    let array = [];
+    try {
+      array = JSON.parse(str);
+    } catch (err) {
+      const tokens = str.split(',');
+      array = tokens.map((token) => Formatter.parseStrToNum(token));
     }
-    return sheetValueAsFloat;
-  }
-
-  static parseRuleValueToNum(rule, info) {
-    const ruleValueAsFloat = Number.parseFloat(rule.value);
-    if (Number.isNaN(ruleValueAsFloat)) {
+    if (array.length !== 2) {
       throw new Error(
-        `無法將第${info.ruleIndex + 1}個條件轉成數字: "${rule.value}"`,
+        `無法判別第${ruleIndex + 1}個條件: "${str}"\
+請輸入兩個數字，範例: "100,200" (不包含雙引號)`,
       );
     }
-    return ruleValueAsFloat;
+
+    return array;
+  }
+
+  static parseStrToNum(str) {
+    return Number.parseFloat(str);
   }
 
   findSheetByName(sheetName) {
