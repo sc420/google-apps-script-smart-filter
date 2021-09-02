@@ -1,4 +1,4 @@
-// Script: main.gs
+// Script (指令碼): main.gs
 
 /* global Formatter, HtmlService, SettingsManager, SpreadsheetApp */
 

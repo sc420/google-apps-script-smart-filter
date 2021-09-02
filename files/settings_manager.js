@@ -1,4 +1,4 @@
-// Script: settings_manager.gs
+// Script (指令碼): settings_manager.gs
 
 /* global PropertiesService */
 

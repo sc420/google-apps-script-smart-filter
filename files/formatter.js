@@ -1,4 +1,4 @@
-// Script: formatter.gs
+// Script (指令碼): formatter.gs
 
 /* global SpreadsheetApp, SettingsManager */
 

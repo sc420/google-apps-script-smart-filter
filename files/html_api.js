@@ -1,4 +1,4 @@
-// Script: html_api.gs
+// Script (指令碼): html_api.gs
 
 /* global formatter, getHeaderNamesInActiveSheet, HtmlService, SpreadsheetApp */
 /* global showUpdateSuccessToast */
