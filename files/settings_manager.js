@@ -4,7 +4,7 @@
 
 class SettingsManager {
   constructor() {
-    this.propertyKey = 'IPO_BOT_SETTINGS';
+    this.propertyKey = 'SMART_FILTER_SETTINGS';
     this.documentProperties = PropertiesService.getDocumentProperties();
 
     this.settings = this.readSettings();
