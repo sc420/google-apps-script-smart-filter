@@ -41,11 +41,11 @@ Google Sheet 中如何把一些資料用顏色區別? 我們會用 "條件式格
 
 你可以複製一份上面螢幕截圖的 [範例 Google Sheet 試算表](https://docs.google.com/spreadsheets/d/1LT0GQB9W7cBJzsAEk4jkWN03Q2HU-qkmq9b4ZqBT6dw/edit?usp=sharing) 來試玩看看。
 
-資料來源: [盤後資訊 > 個股日成交資訊](https://data.gov.tw/dataset/11549)
+資料來源: [政府資料開放平臺: 盤後資訊 > 個股日成交資訊](https://data.gov.tw/dataset/11549)
 
 ## 使用到的 Libraries
 
-- [jQUery 3](https://jquery.com/)
+- [jQuery 3](https://jquery.com/)
 - [Bootstrap 5](https://getbootstrap.com/)
 - [DataTables](https://datatables.net/)
 
