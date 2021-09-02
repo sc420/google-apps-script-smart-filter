@@ -1,6 +1,6 @@
 # Google Apps Script: Smart 篩選
 
-Google Sheet 中如何把一些資料用顏色區別? 我們會用 "條件式格式設定" (Conditional formatting)，但是一些剪下貼上的動作經常會把條件式設定的範圍給弄壞，這在 Excel 也經常發生。
+Google Sheets 中如何把一些資料用顏色區別? 我們會用 "條件式格式設定" (Conditional formatting)，但是一些剪下貼上的動作經常會把條件式設定的範圍給弄壞，這在 Excel 也經常發生。
 
 加上我也經常需要修改條件，傳統的 "條件式格式設定" 要修改數值真的很麻煩。
 
@@ -20,10 +20,10 @@ Google Sheet 中如何把一些資料用顏色區別? 我們會用 "條件式格
 
 ## 安裝方式
 
-1. 開啟一個 Google Sheet 試算表
+1. 開啟一個 Google Sheets 試算表
 2. 將想篩選的資料匯入到目前的工作表
 3. 點上方選單 "工具" -> "指令碼編輯器"
-4. 將 `files/` 內的檔案依照下面的順序加入到 Apps Script 的 "檔案" 中，`.js` 檔案請新增 "指令碼"、`.html` 檔案請新增 "HTML"
+4. 將 `files/` 內的檔案依照下面的順序 (**注意順序非常重要**) 加入到 Apps Script 的 "檔案" 中，`.js` 檔案請新增 "指令碼"、`.html` 檔案請新增 "HTML"
     1. `settings_manager.gs`
     2. `formatter.gs`
     3. `main.gs`
@@ -31,16 +31,16 @@ Google Sheet 中如何把一些資料用顏色區別? 我們會用 "條件式格
     5. `settings_sidebar_styles.html`
     6. `settings_sidebar_scripts.html`
     7. `settings_sidebar.html`
-5. 重新整理 Google Sheet 網頁
+5. 回到試算表，重新整理 Google Sheets 網頁
 6. 等一陣子後會看到上方選單多一個 "Smart 篩選" 選單，點 "Smart 篩選" -> "設定" 開始使用
 
 ## Demo
 
 ![demo](./images/demo.gif)
 
-## Google Sheet 試算表範例
+## Google Sheets 試算表範例
 
-你可以複製一份上面螢幕截圖的 [範例 Google Sheet 試算表](https://docs.google.com/spreadsheets/d/1LT0GQB9W7cBJzsAEk4jkWN03Q2HU-qkmq9b4ZqBT6dw/edit?usp=sharing) 來試玩看看。
+你可以複製一份上面螢幕截圖的 [範例 Google Sheets 試算表](https://docs.google.com/spreadsheets/d/1LT0GQB9W7cBJzsAEk4jkWN03Q2HU-qkmq9b4ZqBT6dw/edit?usp=sharing) 來試玩看看。
 
 資料來源: [政府資料開放平臺: 盤後資訊 > 個股日成交資訊](https://data.gov.tw/dataset/11549)
 
