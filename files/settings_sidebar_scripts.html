@@ -16,8 +16,8 @@
 
   class TableIndex {
     constructor(row = -1, col = -1) {
-      this.row = row;
-      this.col = col;
+      this.row = Number.parseInt(row, 10);
+      this.col = Number.parseInt(col, 10);
     }
 
     clone() {
@@ -338,8 +338,8 @@
       const $editor = $cell.find('.editor');
 
       FilterController.setCellSelectable($cell, true);
-      const newValue = FilterController.getEditorValue($editor, index);
-      const colName = FilterController.colToColName[index.col];
+      const newValue = this.getEditorValue($editor, index);
+      const colName = this.colToColName[index.col];
       this.model.setCell(index.row, colName, newValue);
       $text.text(newValue);
 
@@ -373,18 +373,18 @@
 
     isCellExist(index) {
       if (index.row >= this.model.getNumRows()) return false;
-      if (!(index.col in FilterController.colToColName)) return false;
+      if (!(index.col in this.colToColName)) return false;
       return true;
     }
 
     findCell(index) {
       const $tr = this.$table.find('tbody').find('tr').eq(index.row);
-      const colName = FilterController.colToColName[index.col];
+      const colName = this.colToColName[index.col];
       return $tr.find(`td[data-col-name="${colName}"]`);
     }
 
     initEditor($editor, index) {
-      const colName = FilterController.colToColName[index.col];
+      const colName = this.colToColName[index.col];
       const defaultValue = this.model.getCell(index.row, colName);
       switch (colName) {
         case 'key': {
@@ -425,8 +425,8 @@
       $input.val(defaultValue);
     }
 
-    static getEditorValue($editor, index) {
-      const colName = FilterController.colToColName[index.col];
+    getEditorValue($editor, index) {
+      const colName = this.colToColName[index.col];
       switch (colName) {
         case 'key':
         case 'op':
