@@ -1,5 +1,5 @@
 {
-  "name": "google-app-script-smart-filter",
+  "name": "google-apps-script-smart-filter",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -15,12 +15,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sc420/google-app-script-smart-filter.git"
+    "url": "git+https://github.com/sc420/google-apps-script-smart-filter.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/sc420/google-app-script-smart-filter/issues"
+    "url": "https://github.com/sc420/google-apps-script-smart-filter/issues"
   },
-  "homepage": "https://github.com/sc420/google-app-script-smart-filter#readme"
+  "homepage": "https://github.com/sc420/google-apps-script-smart-filter#readme"
 }
