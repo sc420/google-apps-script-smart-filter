@@ -1,0 +1,754 @@
+<script>
+  /* eslint max-classes-per-file: "off" */
+  /* global google, $ */
+
+  class BootstrapUtils {
+    static setVisible($el, isVisible) {
+      if (isVisible) {
+        $el.removeClass('d-none');
+      } else {
+        $el.addClass('d-none');
+      }
+    }
+  }
+
+  //------------------------------------------------------------------------------
+
+  class TableIndex {
+    constructor(row = -1, col = -1) {
+      this.row = row;
+      this.col = col;
+    }
+
+    clone() {
+      return new TableIndex(this.row, this.col);
+    }
+
+    invalidate() {
+      this.row = -1;
+      this.col = -1;
+    }
+
+    isValid() {
+      return this.row >= 0 && this.col >= 0;
+    }
+
+    toString() {
+      return `TableIndex(${this.row}, ${this.col})`;
+    }
+  }
+
+  //------------------------------------------------------------------------------
+
+  class FilterModel {
+    constructor(filter) {
+      this.filter = filter;
+    }
+
+    addRow(item) {
+      this.filter.rules.push(item);
+    }
+
+    getBackgroundColor() {
+      return this.filter.formattingStyle.backgroundColor;
+    }
+
+    getCell(row, colName) {
+      const rowData = this.getItemAtRow(row);
+      FilterModel.checkColNameExist(rowData, row, colName);
+      return rowData[colName];
+    }
+
+    getItemAtRow(row) {
+      const numRows = this.getNumRows();
+      if (row < 0 || row >= numRows) {
+        throw new Error(`row should be in range 0-${numRows - 1}`);
+      }
+      return this.filter.rules[row];
+    }
+
+    getNumRows() {
+      return this.filter.rules.length;
+    }
+
+    isEmpty() {
+      return this.getNumRows() === 0;
+    }
+
+    removeRowAt(row) {
+      const numRows = this.getNumRows();
+      if (row < 0 || row >= numRows) {
+        throw new Error(`row should be in range 0-${numRows - 1}`);
+      }
+      this.filter.rules.splice(row, 1);
+    }
+
+    setBackgroundColor(color) {
+      this.filter.formattingStyle.backgroundColor = color;
+    }
+
+    setCell(row, colName, value) {
+      const rowData = this.getItemAtRow(row);
+      FilterModel.checkColNameExist(rowData, row, colName);
+      rowData[colName] = value;
+    }
+
+    static checkColNameExist(rowData, row, colName) {
+      if (!(colName in rowData)) {
+        throw new Error(`Could not find data[${row}][${colName}]`);
+      }
+    }
+  }
+
+  //------------------------------------------------------------------------------
+
+  class SpinnerController {
+    constructor($spinnerSection) {
+      this.$spinnerSection = $spinnerSection;
+    }
+
+    show() {
+      BootstrapUtils.setVisible(this.$spinnerSection, true);
+    }
+
+    hide() {
+      BootstrapUtils.setVisible(this.$spinnerSection, false);
+    }
+  }
+
+  //------------------------------------------------------------------------------
+
+  class FilterController {
+    constructor($filterSection, $tableTemplate, model, headerNames, opList) {
+      this.$filterSection = $filterSection;
+      this.$tableTemplate = $tableTemplate;
+      this.model = model;
+      this.headerNames = headerNames;
+      this.opList = opList;
+
+      this.colToColName = {
+        0: 'key',
+        1: 'op',
+        2: 'value',
+      };
+
+      this.selectedIndex = new TableIndex();
+      this.editingIndex = new TableIndex();
+
+      this.cacheJqueryElements();
+
+      this.initTable();
+      this.initColorPicker();
+
+      this.createEventDispatcher();
+
+      this.bindButtonsEvents();
+      this.bindTableEvents();
+      this.bindDataTableEvents();
+      this.bindEditorEvents();
+      this.bindColorPickerEvents();
+    }
+
+    show() {
+      BootstrapUtils.setVisible(this.$filterSection, true);
+    }
+
+    cacheJqueryElements() {
+      this.$table = this.$filterSection.find('.rulesTable');
+      this.$templateRow = this.$tableTemplate.find('tr');
+      this.$addRowButton = this.$filterSection.find('.addRow');
+      this.$editCellButton = this.$filterSection.find('.editCell');
+      this.$removeRowButton = this.$filterSection.find('.removeRow');
+      this.$finishEditButton = this.$filterSection.find('.finishEdit');
+      this.$backgroundColorPicker = this.$filterSection.find(
+        '.backgroundColorPicker',
+      );
+    }
+
+    initTable() {
+      this.dataTable = FilterController.initDataTable(this.$table);
+
+      const numRows = this.model.getNumRows();
+      for (let row = 0; row < numRows; row += 1) {
+        const item = this.model.getItemAtRow(row);
+        const $newRow = this.buildNewRow(item);
+        this.dataTable.row.add($newRow);
+      }
+      this.dataTable.draw();
+    }
+
+    initColorPicker() {
+      const bgColor = this.model.getBackgroundColor();
+      this.$backgroundColorPicker.val(bgColor);
+    }
+
+    createEventDispatcher() {
+      this.$eventDispatcher = $('<div></div>');
+    }
+
+    buildNewRow(item) {
+      const $newRow = this.$templateRow.clone();
+      Object.keys(item).forEach((colName) => {
+        const $text = $newRow
+          .find(`td[data-col-name="${colName}"]`)
+          .find('.text');
+        $text.text(item[colName]);
+      });
+      return $newRow;
+    }
+
+    bindButtonsEvents() {
+      this.$addRowButton.on('click', () => {
+        const newIndex = this.addRow();
+        this.selectCell(newIndex);
+        this.editingIndex = this.editCell(newIndex);
+
+        this.$eventDispatcher.trigger('updateData');
+      });
+
+      this.$editCellButton.on('click', () => {
+        if (!this.selectedIndex.isValid()) {
+          throw new Error('Should select some cell');
+        }
+        this.editingIndex = this.editCell(this.selectedIndex);
+
+        this.$eventDispatcher.trigger('editData');
+      });
+
+      this.$finishEditButton.on('click', () => {
+        if (!this.editingIndex.isValid()) {
+          throw new Error('Should be editing some cell');
+        }
+        this.editingIndex = this.finishEdit(this.editingIndex);
+
+        this.$eventDispatcher.trigger('finishEditData');
+        this.$eventDispatcher.trigger('updateData');
+      });
+
+      this.$removeRowButton.on('click', () => {
+        if (!this.selectedIndex.isValid()) {
+          throw new Error('Should select some cell');
+        }
+        const removedIndex = this.selectedIndex.clone();
+        this.removeRow(this.selectedIndex);
+        if (this.isCellExist(removedIndex)) {
+          this.selectCell(removedIndex);
+        }
+
+        this.$eventDispatcher.trigger('updateData');
+      });
+    }
+
+    bindTableEvents() {
+      this.$table.find('td').on('dblclick', (event) => {
+        if (this.model.isEmpty()) return;
+        const $td = $(event.currentTarget);
+        const $tr = $td.parents('tr');
+        const row = $tr.index();
+        const col = $td.attr('data-col');
+        const index = new TableIndex(row, col);
+
+        this.selectedIndex = this.selectCell(index);
+        this.editingIndex = this.editCell(index);
+
+        this.$eventDispatcher.trigger('editData');
+      });
+    }
+
+    bindDataTableEvents() {
+      this.dataTable.on('select', (e, dt, type, indexes) => {
+        if (type !== 'cell') return;
+        if (this.editingIndex.isValid()) {
+          this.editingIndex = this.finishEdit(this.editingIndex);
+
+          this.$eventDispatcher.trigger('finishEditData');
+          this.$eventDispatcher.trigger('updateData');
+        }
+        this.selectedIndex = new TableIndex(indexes[0].row, indexes[0].column);
+        BootstrapUtils.setVisible(this.$editCellButton, true);
+        BootstrapUtils.setVisible(this.$removeRowButton, true);
+      });
+
+      this.dataTable.on('deselect', () => {
+        this.selectedIndex.invalidate();
+        BootstrapUtils.setVisible(this.$editCellButton, false);
+        BootstrapUtils.setVisible(this.$removeRowButton, false);
+      });
+    }
+
+    bindEditorEvents() {
+      this.$table.find('.editor').on('blur', () => {
+        if (this.editingIndex.isValid()) {
+          this.editingIndex = this.finishEdit(this.editingIndex);
+
+          this.$eventDispatcher.trigger('finishEditData');
+          this.$eventDispatcher.trigger('updateData');
+        }
+      });
+    }
+
+    bindColorPickerEvents() {
+      this.$backgroundColorPicker.on('input', () => {
+        const bgColor = this.$backgroundColorPicker.val();
+        this.model.setBackgroundColor(bgColor);
+
+        this.$eventDispatcher.trigger('updateData');
+      });
+    }
+
+    addRow() {
+      const newRow = this.model.getNumRows();
+      const newItem = this.getDefaultNewItem();
+      this.model.addRow(newItem);
+
+      const $newRow = this.buildNewRow(newItem);
+      this.dataTable.row.add($newRow);
+      this.dataTable.draw();
+
+      this.bindTableEvents();
+      this.bindEditorEvents();
+
+      return new TableIndex(newRow, 0);
+    }
+
+    editCell(index) {
+      const $cell = this.findCell(index);
+      const $text = $cell.find('.text');
+      const $editor = $cell.find('.editor');
+
+      FilterController.setCellSelectable($cell, false);
+      this.initEditor($editor, index);
+
+      BootstrapUtils.setVisible(this.$addRowButton, false);
+      BootstrapUtils.setVisible(this.$editCellButton, false);
+      BootstrapUtils.setVisible(this.$finishEditButton, true);
+      BootstrapUtils.setVisible(this.$removeRowButton, false);
+
+      BootstrapUtils.setVisible($text, false);
+      BootstrapUtils.setVisible($editor, true);
+
+      $editor.focus();
+
+      return index.clone();
+    }
+
+    finishEdit(index) {
+      const $cell = this.findCell(index);
+      const $text = $cell.find('.text');
+      const $editor = $cell.find('.editor');
+
+      FilterController.setCellSelectable($cell, true);
+      const newValue = FilterController.getEditorValue($editor, index);
+      const colName = FilterController.colToColName[index.col];
+      this.model.setCell(index.row, colName, newValue);
+      $text.text(newValue);
+
+      BootstrapUtils.setVisible(this.$addRowButton, true);
+      BootstrapUtils.setVisible(this.$editCellButton, true);
+      BootstrapUtils.setVisible(this.$finishEditButton, false);
+      BootstrapUtils.setVisible(this.$removeRowButton, true);
+
+      BootstrapUtils.setVisible($text, true);
+      BootstrapUtils.setVisible($editor, false);
+      return new TableIndex();
+    }
+
+    removeRow(index) {
+      this.model.removeRowAt(index.row);
+
+      this.dataTable.row(index.row).remove();
+      this.dataTable.draw();
+
+      BootstrapUtils.setVisible(this.$addRowButton, true);
+      BootstrapUtils.setVisible(this.$editCellButton, false);
+      BootstrapUtils.setVisible(this.$finishEditButton, false);
+      BootstrapUtils.setVisible(this.$removeRowButton, false);
+      return new TableIndex();
+    }
+
+    selectCell(index) {
+      this.dataTable.cell(index.row, index.col).select();
+      return index.clone();
+    }
+
+    isCellExist(index) {
+      if (index.row >= this.model.getNumRows()) return false;
+      if (!(index.col in FilterController.colToColName)) return false;
+      return true;
+    }
+
+    findCell(index) {
+      const $tr = this.$table.find('tbody').find('tr').eq(index.row);
+      const colName = FilterController.colToColName[index.col];
+      return $tr.find(`td[data-col-name="${colName}"]`);
+    }
+
+    initEditor($editor, index) {
+      const colName = FilterController.colToColName[index.col];
+      const defaultValue = this.model.getCell(index.row, colName);
+      switch (colName) {
+        case 'key': {
+          FilterController.initSelectOptions(
+            $editor,
+            this.headerNames,
+            defaultValue,
+          );
+          break;
+        }
+        case 'op': {
+          FilterController.initSelectOptions($editor, this.opList, defaultValue);
+          break;
+        }
+        case 'value': {
+          FilterController.initInput($editor, defaultValue);
+          break;
+        }
+        default:
+          throw new Error(`Unknown colName "${colName}"`);
+      }
+    }
+
+    static initSelectOptions($select, options, defaultValue) {
+      $select.empty();
+      const $newOptions = [];
+      options.forEach((option) => {
+        const $newOption = $('<option></option>');
+        $newOption.attr('value', option);
+        $newOption.text(option);
+        $newOptions.push($newOption);
+      });
+      $select.append($newOptions);
+      $select.val(defaultValue).change();
+    }
+
+    static initInput($input, defaultValue) {
+      $input.val(defaultValue);
+    }
+
+    static getEditorValue($editor, index) {
+      const colName = FilterController.colToColName[index.col];
+      switch (colName) {
+        case 'key':
+        case 'op':
+          return $editor.find(':selected').text();
+        case 'value':
+          return $editor.val();
+        default:
+          throw new Error(`Unknown colName "${colName}"`);
+      }
+    }
+
+    static setCellSelectable($cell, isSelectable) {
+      if (isSelectable) {
+        $cell.addClass('selectable');
+      } else {
+        $cell.removeClass('selectable');
+      }
+    }
+
+    getDefaultNewItem() {
+      return {
+        key: this.headerNames[0],
+        op: this.opList[0],
+        value: '0',
+      };
+    }
+
+    static initDataTable($table) {
+      const dataTable = $table.DataTable({
+        info: false,
+        language: {
+          emptyTable: '無資料，請按"新增"增加條件',
+        },
+        ordering: false,
+        paging: false,
+        searching: false,
+        select: {
+          items: 'cell',
+          style: 'single',
+        },
+      });
+      dataTable.select.selector('td.selectable');
+      return dataTable;
+    }
+  }
+
+  //------------------------------------------------------------------------------
+
+  class SubmitController {
+    constructor($submitSection) {
+      this.$submitSection = $submitSection;
+
+      this.cacheJqueryElements();
+
+      this.createEventDispatcher();
+
+      this.bindButtonsEvents();
+    }
+
+    show() {
+      BootstrapUtils.setVisible(this.$submitSection, true);
+    }
+
+    setIdleStatus() {
+      this.$updateChangesButton.prop('disabled', false);
+      this.$updateChangesButton.addClass('btn-primary');
+      this.$updateChangesButton.removeClass('btn-secondary');
+      BootstrapUtils.setVisible(this.$idleIcon, true);
+      BootstrapUtils.setVisible(this.$busyIcon, false);
+    }
+
+    setDisabledStatus() {
+      this.$updateChangesButton.prop('disabled', true);
+      this.$updateChangesButton.addClass('btn-secondary');
+      this.$updateChangesButton.removeClass('btn-primary');
+      BootstrapUtils.setVisible(this.$idleIcon, true);
+      BootstrapUtils.setVisible(this.$busyIcon, false);
+    }
+
+    setBusyStatus() {
+      this.$updateChangesButton.prop('disabled', true);
+      this.$updateChangesButton.addClass('btn-secondary');
+      this.$updateChangesButton.removeClass('btn-primary');
+      BootstrapUtils.setVisible(this.$idleIcon, false);
+      BootstrapUtils.setVisible(this.$busyIcon, true);
+    }
+
+    cacheJqueryElements() {
+      this.$updateChangesButton = this.$submitSection.find('.updateChanges');
+      this.$idleIcon = this.$updateChangesButton.find('.idleIcon');
+      this.$busyIcon = this.$updateChangesButton.find('.busyIcon');
+
+      this.$resetSettingsLink = this.$submitSection.find('.resetSettings');
+    }
+
+    createEventDispatcher() {
+      this.$eventDispatcher = $('<div></div>');
+    }
+
+    bindButtonsEvents() {
+      this.$updateChangesButton.on('click', () => {
+        this.$eventDispatcher.trigger('updateChanges');
+      });
+
+      this.$resetSettingsLink.on('click', () => {
+        this.$eventDispatcher.trigger('resetSettings');
+      });
+    }
+  }
+
+  //------------------------------------------------------------------------------
+
+  class MessageController {
+    constructor($messageSection) {
+      this.$messageSection = $messageSection;
+
+      this.cacheJqueryElements();
+    }
+
+    showMessage(type, content) {
+      if (!(type in this.typeToContainer)) {
+        throw new Error(`Unknown type ${type}`);
+      }
+      const $container = this.typeToContainer[type];
+      const $message = $container.find('.message');
+      $message.html(content);
+      BootstrapUtils.setVisible($container, true);
+      BootstrapUtils.setVisible(this.$messageSection, true);
+    }
+
+    resetMessages() {
+      Object.keys(this.typeToContainer).forEach((type) => {
+        const $container = this.typeToContainer[type];
+        BootstrapUtils.setVisible($container, false);
+      });
+      BootstrapUtils.setVisible(this.$messageSection, false);
+    }
+
+    cacheJqueryElements() {
+      this.typeToContainer = {
+        success: this.$messageSection.find('.success'),
+        error: this.$messageSection.find('.error'),
+        info: this.$messageSection.find('.info'),
+      };
+    }
+  }
+
+  //------------------------------------------------------------------------------
+
+  class App {
+    constructor() {
+      this.cacheJqueryElements();
+
+      this.initControllers();
+    }
+
+    run() {
+      new Promise((resolve, reject) => {
+        google.script.run
+          .withFailureHandler((error) => reject(error))
+          .withSuccessHandler((response) => resolve([
+            response.sheetSettings,
+            response.headerNames,
+            response.opList,
+          ]))
+          .getDataForHTML();
+      })
+        .then(this.initSidebar.bind(this))
+        .then(this.showSubmitSection.bind(this))
+        .then(this.hideSpinner.bind(this))
+        .catch(this.showError.bind(this));
+    }
+
+    static close() {
+      google.script.host.close();
+    }
+
+    cacheJqueryElements() {
+      this.$spinnerSection = $('#spinnerSection');
+      this.$includeFilterSection = $('#includeFilterSection');
+      this.$excludeFilterSection = $('#excludeFilterSection');
+      this.$submitSection = $('#submitSection');
+      this.$messageSection = $('#messageSection');
+      this.$tableTemplate = $('#tableTemplate');
+    }
+
+    initControllers() {
+      this.spinnerCtrl = new SpinnerController(this.$spinnerSection);
+      this.messageCtrl = new MessageController(this.$messageSection);
+      this.submitSectionCtrl = new SubmitController(this.$submitSection);
+    }
+
+    initSidebar([sheetSettings, headerNames, opList]) {
+      this.spinnerCtrl.hide();
+
+      this.includeFilterModel = new FilterModel(sheetSettings.includeFilter);
+      this.includeFilterCtrl = new FilterController(
+        this.$includeFilterSection,
+        this.$tableTemplate,
+        this.includeFilterModel,
+        headerNames,
+        opList,
+      );
+
+      this.excludeFilterModel = new FilterModel(sheetSettings.excludeFilter);
+      this.excludeFilterCtrl = new FilterController(
+        this.$excludeFilterSection,
+        this.$tableTemplate,
+        this.excludeFilterModel,
+        headerNames,
+        opList,
+      );
+
+      this.includeFilterCtrl.show();
+      this.excludeFilterCtrl.show();
+
+      this.bindFilterSectionEvents();
+      this.bindSubmitSectionEvents();
+    }
+
+    updateChanges() {
+      new Promise((resolve, reject) => {
+        const newSheetSettings = {
+          includeFilter: this.includeFilterModel.filter,
+          excludeFilter: this.excludeFilterModel.filter,
+        };
+        google.script.run
+          .withFailureHandler((error) => reject(error))
+          .withSuccessHandler((response) => resolve([
+            response.sheetSettings,
+            response.headerNames,
+            response.opList,
+          ]))
+          .updateSheetSettings(newSheetSettings);
+      })
+        .then(this.clearMessage.bind(this))
+        .catch(this.showError.bind(this))
+        .finally(this.resetSubmitSection.bind(this));
+    }
+
+    resetSheetSettings() {
+      new Promise((resolve, reject) => {
+        google.script.run
+          .withFailureHandler((error) => reject(error))
+          .withSuccessHandler((response) => resolve(response))
+          .resetSheetSettings();
+      })
+        .then((success) => {
+          if (success) App.close();
+        })
+        .catch(this.showError.bind(this))
+        .finally(this.resetSubmitSection.bind(this));
+    }
+
+    hideSpinner() {
+      this.spinnerCtrl.hide();
+    }
+
+    showSubmitSection() {
+      this.submitSectionCtrl.show();
+    }
+
+    resetSubmitSection() {
+      this.submitSectionCtrl.setIdleStatus();
+    }
+
+    showError(error) {
+      // eslint-disable-next-line no-console
+      console.error(error);
+      this.spinnerCtrl.hide();
+      this.messageCtrl.resetMessages();
+      this.messageCtrl.showMessage(
+        'error',
+        `${error.toString()}<br><br>${error.stack}`,
+      );
+    }
+
+    clearMessage() {
+      this.messageCtrl.resetMessages();
+    }
+
+    bindFilterSectionEvents() {
+      this.includeFilterCtrl.$eventDispatcher.on('editData', () => {
+        this.submitSectionCtrl.setDisabledStatus();
+      });
+
+      this.includeFilterCtrl.$eventDispatcher.on(
+        'finishEditData updateData',
+        () => {
+          this.resetSubmitSection();
+        },
+      );
+
+      this.excludeFilterCtrl.$eventDispatcher.on('editData', () => {
+        this.submitSectionCtrl.setDisabledStatus();
+      });
+
+      this.excludeFilterCtrl.$eventDispatcher.on(
+        'finishEditData updateData',
+        () => {
+          this.resetSubmitSection();
+        },
+      );
+    }
+
+    bindSubmitSectionEvents() {
+      this.submitSectionCtrl.$eventDispatcher.on('updateChanges', () => {
+        this.submitSectionCtrl.setBusyStatus();
+        this.updateChanges();
+      });
+
+      this.submitSectionCtrl.$eventDispatcher.on('resetSettings', () => {
+        this.submitSectionCtrl.setBusyStatus();
+        this.resetSheetSettings();
+      });
+    }
+  }
+
+  //------------------------------------------------------------------------------
+
+  $(document).ready(() => {
+    const app = new App();
+    app.run();
+  });
+</script>
