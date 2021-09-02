@@ -145,66 +145,48 @@ class Formatter {
   }
 
   static matchRule(dataRange, row, col, sheetValue, ruleIndex, rule) {
+    const info = {
+      dataRange,
+      row,
+      col,
+      ruleIndex,
+    };
     switch (rule.op) {
       case '>=': {
-        const sheetValueAsFloat = Formatter.parseSheetValueAsFloat(
-          dataRange,
-          row,
-          col,
-          sheetValue,
-        );
-        const ruleValueAsFloat = Formatter.parseRuleValueAsFloat(
-          ruleIndex,
-          rule,
-        );
-        return sheetValueAsFloat >= ruleValueAsFloat;
+        const sheetNum = Formatter.parseSheetValueToNum(sheetValue, info);
+        const ruleNum = Formatter.parseRuleValueToNum(rule, info);
+        return sheetNum >= ruleNum;
       }
       case '=': {
-        const sheetValueAsFloat = Formatter.parseSheetValueAsFloat(
-          dataRange,
-          row,
-          col,
-          sheetValue,
-        );
-        const ruleValueAsFloat = Formatter.parseRuleValueAsFloat(
-          ruleIndex,
-          rule,
-        );
-        return Math.abs(sheetValueAsFloat - ruleValueAsFloat) < Number.EPSILON;
+        const sheetNum = Formatter.parseSheetValueToNum(sheetValue, info);
+        const ruleNum = Formatter.parseRuleValueToNum(rule, info);
+        return Math.abs(sheetNum - ruleNum) < Number.EPSILON;
       }
       case '<=': {
-        const sheetValueAsFloat = Formatter.parseSheetValueAsFloat(
-          dataRange,
-          row,
-          col,
-          sheetValue,
-        );
-        const ruleValueAsFloat = Formatter.parseRuleValueAsFloat(
-          ruleIndex,
-          rule,
-        );
-        return sheetValueAsFloat <= ruleValueAsFloat;
+        const sheetNum = Formatter.parseSheetValueToNum(sheetValue, info);
+        const ruleNum = Formatter.parseRuleValueToNum(rule, info);
+        return sheetNum <= ruleNum;
       }
       default:
         throw new Error(`Unknown operation ${rule.op}`);
     }
   }
 
-  static parseSheetValueAsFloat(dataRange, row, col, sheetValue) {
+  static parseSheetValueToNum(sheetValue, info) {
     const sheetValueAsFloat = Number.parseFloat(sheetValue);
     if (Number.isNaN(sheetValueAsFloat)) {
-      const cellRange = dataRange.offset(row, col, 1, 1);
+      const cellRange = info.dataRange.offset(info.row, info.col, 1, 1);
       const a1Notation = cellRange.getA1Notation();
       throw new Error(`無法將 "${a1Notation}" 轉成數字: "${sheetValue}"`);
     }
     return sheetValueAsFloat;
   }
 
-  static parseRuleValueAsFloat(ruleIndex, rule) {
+  static parseRuleValueToNum(rule, info) {
     const ruleValueAsFloat = Number.parseFloat(rule.value);
     if (Number.isNaN(ruleValueAsFloat)) {
       throw new Error(
-        `無法將第${ruleIndex + 1}個條件轉成數字: "${rule.value}"`,
+        `無法將第${info.ruleIndex + 1}個條件轉成數字: "${rule.value}"`,
       );
     }
     return ruleValueAsFloat;
